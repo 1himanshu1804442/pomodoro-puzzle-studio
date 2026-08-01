@@ -1,0 +1,288 @@
+// src/pages/ArcadeDashboard.jsx
+import React, { useState, useEffect } from 'react';
+import TaskList from '../components/TaskList';
+import PomodoroTimer from '../components/PomodoroTimer';
+import PuzzleBoard from '../components/PuzzleBoard';
+import { puzzleArtworks } from '../services/imageService';
+import LofiPlayer from '../components/LofiPlayer';
+import VictoryTrophy from '../components/VictoryTrophy';
+import { XP_PER_TASK, getLevel, getRankTitle, getXPProgressPercent } from '../services/xpService';
+
+// Why this Forest App inspired architecture: Anchoring the focus countdown in the exact screen center above the wallpaper while isolating all todo controls inside a collapsible right-hand drawer projects serious, professional elegance!
+export default function ArcadeDashboard() {
+  const [tasks, setTasks] = useState([]);
+  const [activeTaskId, setActiveTaskId] = useState(null);
+  const [activeArtworkIndex, setActiveArtworkIndex] = useState(0);
+  const [isUiHidden, setIsUiHidden] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const activeTask = tasks.find(t => t.id === activeTaskId);
+  const completedCount = tasks.filter(t => t.completed).length;
+  
+  const totalXp = completedCount * XP_PER_TASK;
+  const currentLevel = getLevel(totalXp);
+  const currentRank = getRankTitle(currentLevel);
+  const xpProgress = getXPProgressPercent(totalXp);
+  
+  const isVictory = tasks.length > 0 && completedCount === tasks.length;
+
+  // Why useEffect: Keyboard shortcuts allow users to easily toggle wallpaper inspection mode via ESC key.
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setIsUiHidden(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // Why this logic: Clicking continue transitions the user to the next arcade level and automatically rotates the background artwork!
+  const handleContinue = () => {
+    setTasks([]);
+    setActiveArtworkIndex((prevIndex) => (prevIndex + 1) % puzzleArtworks.length);
+  };
+
+  const handleCompleteTask = (id) => {
+    setTasks(tasks.map(task => 
+      task.id === id ? { ...task, completed: true } : task
+    ));
+    if (activeTaskId === id) setActiveTaskId(null);
+  };
+
+  const activeArtwork = puzzleArtworks[activeArtworkIndex]?.imagePath || '/assets/cyberpunk_city.jpg';
+
+  return (
+    <div style={{ position: 'relative', width: '100%', minHeight: '100vh', overflow: 'hidden' }}>
+      {isVictory && !isUiHidden && (
+        <VictoryTrophy 
+          totalTasks={completedCount} 
+          totalXp={totalXp} 
+          activeArtwork={activeArtwork} 
+          onContinue={handleContinue} 
+        />
+      )}
+
+      {/* Immersive Wall-to-Wall Background Puzzle Matrix */}
+      <PuzzleBoard 
+        totalTasks={tasks.length}
+        completedTasksCount={completedCount}
+        activeArtwork={activeArtwork}
+      />
+
+      {/* Floating UI Hidden Mode Hint Badge */}
+      {isUiHidden && (
+        <div 
+          onClick={() => setIsUiHidden(false)}
+          style={{
+            position: 'fixed',
+            top: '20px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'rgba(10, 14, 25, 0.9)',
+            border: '1px solid #00f0ff',
+            padding: '0.6rem 1.5rem',
+            borderRadius: '30px',
+            color: '#00f0ff',
+            fontWeight: '700',
+            fontSize: '0.9rem',
+            cursor: 'pointer',
+            zIndex: 1000,
+            boxShadow: '0 0 25px rgba(0, 240, 255, 0.5)',
+            letterSpacing: '1px'
+          }}
+        >
+          👁️ UI HIDDEN (WALLPAPER MODE) — Click here or press ESC to restore studio controls
+        </div>
+      )}
+
+      {/* Studio Workspace Layout */}
+      <div style={{ 
+        position: 'relative', 
+        zIndex: 10, 
+        width: '100%', 
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        pointerEvents: 'none',
+        opacity: isUiHidden ? 0 : 1,
+        transition: 'opacity 0.4s ease',
+        visibility: isUiHidden ? 'hidden' : 'visible'
+      }}>
+        {/* Minimalist Top Studio Navbar */}
+        <header style={{ 
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          padding: '0.8rem 2rem',
+          pointerEvents: 'auto',
+          background: 'rgba(8, 10, 18, 0.5)',
+          backdropFilter: 'blur(10px)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          width: '100%',
+          zIndex: 50
+        }}>
+          {/* Brand Title */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <span style={{ fontSize: '1.4rem' }}>🌳</span>
+            <h1 style={{ 
+              margin: 0, 
+              fontSize: '1.35rem', 
+              background: 'linear-gradient(90deg, #00f0ff, #ff007f)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              fontWeight: '900',
+              letterSpacing: '1.5px',
+              whiteSpace: 'nowrap'
+            }}>
+              POMODORO STUDIO
+            </h1>
+          </div>
+
+          {/* Compact Inline XP Bar */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: '1rem', 
+            background: 'rgba(0,0,0,0.5)', padding: '0.4rem 1.2rem', borderRadius: '25px', 
+            border: '1px solid rgba(0, 240, 255, 0.25)', minWidth: '280px', flex: 1, maxWidth: '400px'
+          }}>
+            <div style={{ color: '#00f0ff', fontWeight: '800', fontSize: '0.82rem' }}>
+              LVL {currentLevel}
+            </div>
+            <div style={{ flex: 1, height: '7px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+              <div style={{ width: `${xpProgress}%`, height: '100%', background: 'linear-gradient(90deg, #00f0ff, #ff007f)', transition: 'width 0.5s ease-out' }}></div>
+            </div>
+            <div style={{ color: '#ff007f', fontWeight: '800', fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+              {totalXp} XP ({currentRank})
+            </div>
+          </div>
+
+          {/* Controls: Theme Selector & Hide UI Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(0, 0, 0, 0.4)', padding: '0.25rem 0.5rem', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+              {puzzleArtworks.map((art, idx) => {
+                const isSelected = activeArtworkIndex === idx;
+                return (
+                  <button 
+                    key={idx} 
+                    onClick={() => setActiveArtworkIndex(idx)}
+                    style={{
+                      background: isSelected ? 'linear-gradient(135deg, #00f0ff, #0072ff)' : 'transparent',
+                      color: isSelected ? '#000000' : '#a0aec0',
+                      border: 'none',
+                      padding: '0.3rem 0.8rem',
+                      borderRadius: '20px',
+                      fontWeight: isSelected ? '800' : '600',
+                      fontSize: '0.8rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease'
+                    }}
+                  >
+                    {art.title.toUpperCase()}
+                  </button>
+                );
+              })}
+            </div>
+
+            <button 
+              className="btn" 
+              onClick={() => setIsUiHidden(true)}
+              title="Hide UI controls to inspect your full background puzzle artwork (Press ESC)"
+              style={{ background: 'rgba(0, 240, 255, 0.12)', borderColor: '#00f0ff', color: '#00f0ff', padding: '0.45rem 0.9rem', fontSize: '0.82rem' }}
+            >
+              👁️ Inspect Art
+            </button>
+          </div>
+        </header>
+
+        {/* Primary Screen Layout: Hero Centerpiece + Docked Studio Drawer */}
+        <div style={{ display: 'flex', flex: 1, position: 'relative', width: '100%', height: 'calc(100vh - 65px)', overflow: 'hidden' }}>
+          
+          {/* DEAD-CENTER HERO TIMER WORKSPACE */}
+          <div style={{ 
+            flex: 1, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            pointerEvents: 'auto',
+            paddingRight: isSidebarOpen ? '400px' : '0', /* Keep timer perfectly centered relative to visible open space! */
+            transition: 'padding 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}>
+            <PomodoroTimer 
+              activeTask={activeTask}
+              onCompleteTask={handleCompleteTask}
+            />
+          </div>
+
+          {/* SIDEBAR TOGGLE TAB BUTTON */}
+          <div style={{
+            position: 'absolute',
+            top: '25px',
+            right: isSidebarOpen ? '400px' : '20px',
+            zIndex: 100,
+            pointerEvents: 'auto',
+            transition: 'right 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}>
+            <button
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+              style={{
+                background: 'rgba(8, 12, 22, 0.85)',
+                backdropFilter: 'blur(10px)',
+                border: '1px solid #00f0ff',
+                color: '#00f0ff',
+                padding: '0.6rem 1.2rem',
+                borderRadius: isSidebarOpen ? '30px 0 0 30px' : '30px',
+                fontWeight: '800',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                boxShadow: '-4px 4px 20px rgba(0,0,0,0.6)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                letterSpacing: '0.5px'
+              }}
+            >
+              {isSidebarOpen ? '▶ HIDE SIDEBAR' : '◀ 📁 STUDY STUDIO (TASKS & RADIO)'}
+            </button>
+          </div>
+
+          {/* DOCKED RIGHT-HAND STUDIO SIDEBAR DRAWER (Forest App Vibe!) */}
+          <aside style={{ 
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            width: '400px',
+            height: '100%',
+            background: 'rgba(8, 11, 20, 0.4)',
+            backdropFilter: 'blur(15px)',
+            WebkitBackdropFilter: 'blur(15px)',
+            borderLeft: '1px solid rgba(255, 255, 255, 0.1)',
+            padding: '2rem 1.5rem',
+            overflowY: 'auto',
+            pointerEvents: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2rem',
+            transform: isSidebarOpen ? 'translateX(0)' : 'translateX(100%)',
+            transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: '-10px 0 35px rgba(0,0,0,0.6)',
+            zIndex: 40
+          }}>
+            {/* Lofi Radio Synthesizer Console */}
+            <LofiPlayer />
+
+            {/* Todo Checklist Module */}
+            <TaskList 
+              tasks={tasks}
+              setTasks={setTasks}
+              activeTaskId={activeTaskId}
+              setActiveTaskId={setActiveTaskId}
+            />
+          </aside>
+
+        </div>
+      </div>
+    </div>
+  );
+}
