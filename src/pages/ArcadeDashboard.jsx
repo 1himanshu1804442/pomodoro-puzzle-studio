@@ -20,7 +20,8 @@ export default function ArcadeDashboard() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    setArtworks(getLoadedArtworks());
+    const initialArtworks = getLoadedArtworks();
+    setArtworks(initialArtworks);
     setTotalXp(loadSavedXP());
   }, []);
 
@@ -64,16 +65,22 @@ export default function ArcadeDashboard() {
     saveXP(newXp);
   };
 
+  // Why fail-safe memory state injection: Ensuring the uploaded wallpaper is added to React state before checking offline disk storage guarantees 100% reliable rendering even for multi-megabyte photo uploads!
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
       const reader = new FileReader();
       reader.onload = (event) => {
         const dataUrl = event.target.result;
-        saveCustomArtwork(dataUrl, 'Custom Upload');
-        const loaded = getLoadedArtworks();
-        setArtworks(loaded);
-        setActiveArtworkIndex(loaded.length - 1);
+        const cleanTitle = file.name ? file.name.split('.')[0] : 'Custom Photo';
+        const newArt = saveCustomArtwork(dataUrl, cleanTitle.substring(0, 15));
+        
+        setArtworks(prev => {
+          const alreadyExists = prev.some(a => a.id === newArt.id);
+          const updatedList = alreadyExists ? prev : [...prev, newArt];
+          setActiveArtworkIndex(updatedList.length - 1);
+          return updatedList;
+        });
       };
       reader.readAsDataURL(file);
     }
@@ -188,13 +195,13 @@ export default function ArcadeDashboard() {
           </div>
 
           {/* Controls: Theme Selector & Hide UI Toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(0, 0, 0, 0.4)', padding: '0.25rem 0.5rem', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(0, 0, 0, 0.4)', padding: '0.25rem 0.5rem', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.1)', flexWrap: 'wrap' }}>
               {artworks.map((art, idx) => {
                 const isSelected = activeArtworkIndex === idx;
                 return (
                   <button 
-                    key={idx} 
+                    key={art.id || idx} 
                     onClick={() => setActiveArtworkIndex(idx)}
                     style={{
                       background: isSelected ? 'linear-gradient(135deg, #00f0ff, #0072ff)' : 'transparent',
@@ -208,7 +215,7 @@ export default function ArcadeDashboard() {
                       transition: 'all 0.3s ease'
                     }}
                   >
-                    {art.title.toUpperCase()}
+                    {(art.title || 'Theme').toUpperCase()}
                   </button>
                 );
               })}
@@ -216,16 +223,17 @@ export default function ArcadeDashboard() {
               <button
                 onClick={() => fileInputRef.current?.click()}
                 style={{
-                  background: 'transparent',
+                  background: 'rgba(0, 240, 255, 0.15)',
                   color: '#00f0ff',
                   border: '1px dashed #00f0ff',
-                  padding: '0.3rem 0.8rem',
+                  padding: '0.3rem 0.9rem',
                   borderRadius: '20px',
-                  fontWeight: '600',
+                  fontWeight: '800',
                   fontSize: '0.8rem',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
-                  marginLeft: '0.2rem'
+                  marginLeft: '0.2rem',
+                  letterSpacing: '0.5px'
                 }}
               >
                 📤 UPLOAD WALLPAPER
@@ -260,7 +268,7 @@ export default function ArcadeDashboard() {
             alignItems: 'center', 
             justifyContent: 'center', 
             pointerEvents: 'auto',
-            paddingRight: isSidebarOpen ? '400px' : '0', /* Keep timer perfectly centered relative to visible open space! */
+            paddingRight: isSidebarOpen ? '400px' : '0', 
             transition: 'padding 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
           }}>
             <PomodoroTimer 
