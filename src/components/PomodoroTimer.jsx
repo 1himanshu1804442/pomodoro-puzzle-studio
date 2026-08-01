@@ -1,4 +1,3 @@
-// src/components/PomodoroTimer.jsx
 import React, { useState, useEffect } from 'react';
 
 // Why free-floating studio styling: Removing square border boxes around the timer enables majestic 7.5rem typography to float seamlessly directly over the center of the user's high-definition wallpaper, emulating Apple Design Award winning study suites like Forest!
@@ -22,6 +21,19 @@ export default function PomodoroTimer({ activeTask, onCompleteTask }) {
     }
     return () => clearInterval(interval);
   }, [isActive, timeLeft, activeTask, mode, onCompleteTask]);
+
+  // Spacebar to start/pause timer
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsActive(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const setPreset = (presetMode, seconds) => {
     setMode(presetMode);
@@ -75,7 +87,7 @@ export default function PomodoroTimer({ activeTask, onCompleteTask }) {
       </div>
 
       {/* Primary Control Pills */}
-      <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', marginBottom: '2rem', width: '100%' }}>
+      <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', marginBottom: '1rem', width: '100%' }}>
         <button 
           className="btn btn-primary" 
           onClick={toggleTimer} 
@@ -95,6 +107,11 @@ export default function PomodoroTimer({ activeTask, onCompleteTask }) {
         >
           ↺ RESET
         </button>
+      </div>
+
+      {/* Keyboard hints */}
+      <div style={{ fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '2rem', opacity: 0.8 }}>
+        [SPACE: Start/Pause] | [ESC: Hide Studio UI]
       </div>
 
       {/* Minimalist Duration Selectors */}

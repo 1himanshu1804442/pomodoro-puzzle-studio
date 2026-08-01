@@ -1,25 +1,32 @@
-// src/pages/ArcadeDashboard.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import TaskList from '../components/TaskList';
 import PomodoroTimer from '../components/PomodoroTimer';
 import PuzzleBoard from '../components/PuzzleBoard';
-import { puzzleArtworks } from '../services/imageService';
+import { getLoadedArtworks, saveCustomArtwork } from '../services/imageService';
 import LofiPlayer from '../components/LofiPlayer';
 import VictoryTrophy from '../components/VictoryTrophy';
-import { XP_PER_TASK, getLevel, getRankTitle, getXPProgressPercent } from '../services/xpService';
+import { loadSavedXP, saveXP, XP_PER_TASK, getLevel, getRankTitle, getXPProgressPercent } from '../services/xpService';
 
 // Why this Forest App inspired architecture: Anchoring the focus countdown in the exact screen center above the wallpaper while isolating all todo controls inside a collapsible right-hand drawer projects serious, professional elegance!
 export default function ArcadeDashboard() {
   const [tasks, setTasks] = useState([]);
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [activeArtworkIndex, setActiveArtworkIndex] = useState(0);
+  const [artworks, setArtworks] = useState([]);
   const [isUiHidden, setIsUiHidden] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [totalXp, setTotalXp] = useState(0);
+
+  const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    setArtworks(getLoadedArtworks());
+    setTotalXp(loadSavedXP());
+  }, []);
 
   const activeTask = tasks.find(t => t.id === activeTaskId);
   const completedCount = tasks.filter(t => t.completed).length;
   
-  const totalXp = completedCount * XP_PER_TASK;
   const currentLevel = getLevel(totalXp);
   const currentRank = getRankTitle(currentLevel);
   const xpProgress = getXPProgressPercent(totalXp);
@@ -40,7 +47,9 @@ export default function ArcadeDashboard() {
   // Why this logic: Clicking continue transitions the user to the next arcade level and automatically rotates the background artwork!
   const handleContinue = () => {
     setTasks([]);
-    setActiveArtworkIndex((prevIndex) => (prevIndex + 1) % puzzleArtworks.length);
+    if (artworks.length > 0) {
+      setActiveArtworkIndex((prevIndex) => (prevIndex + 1) % artworks.length);
+    }
   };
 
   const handleCompleteTask = (id) => {
@@ -48,9 +57,29 @@ export default function ArcadeDashboard() {
       task.id === id ? { ...task, completed: true } : task
     ));
     if (activeTaskId === id) setActiveTaskId(null);
+    
+    // Add XP and persist to local storage
+    const newXp = totalXp + XP_PER_TASK;
+    setTotalXp(newXp);
+    saveXP(newXp);
   };
 
-  const activeArtwork = puzzleArtworks[activeArtworkIndex]?.imagePath || '/assets/cyberpunk_city.jpg';
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target.result;
+        saveCustomArtwork(dataUrl, 'Custom Upload');
+        const loaded = getLoadedArtworks();
+        setArtworks(loaded);
+        setActiveArtworkIndex(loaded.length - 1);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const activeArtwork = artworks[activeArtworkIndex]?.imagePath || '/assets/cyberpunk_city.jpg';
 
   return (
     <div style={{ position: 'relative', width: '100%', minHeight: '100vh', overflow: 'hidden' }}>
@@ -161,7 +190,7 @@ export default function ArcadeDashboard() {
           {/* Controls: Theme Selector & Hide UI Toggle */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(0, 0, 0, 0.4)', padding: '0.25rem 0.5rem', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.1)' }}>
-              {puzzleArtworks.map((art, idx) => {
+              {artworks.map((art, idx) => {
                 const isSelected = activeArtworkIndex === idx;
                 return (
                   <button 
@@ -183,6 +212,31 @@ export default function ArcadeDashboard() {
                   </button>
                 );
               })}
+              
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  background: 'transparent',
+                  color: '#00f0ff',
+                  border: '1px dashed #00f0ff',
+                  padding: '0.3rem 0.8rem',
+                  borderRadius: '20px',
+                  fontWeight: '600',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                  marginLeft: '0.2rem'
+                }}
+              >
+                📤 UPLOAD WALLPAPER
+              </button>
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                onChange={handleFileUpload}
+              />
             </div>
 
             <button 

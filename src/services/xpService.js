@@ -1,29 +1,48 @@
-// src/services/xpService.js
+// xpService.js - Service layer for handling Experience Points (XP)
+// Separating this logic ensures our UI components remain clean and only focused on rendering.
 
-// Rule 3: Strict separation of business logic from components.
-// We keep XP and rank calculation pure and highly testable here.
+export const XP_PER_TASK = 50;
 
-export const XP_PER_TASK = 250;
+/**
+ * Loads the saved XP from localStorage.
+ * We use localStorage to persist the user's progress across sessions.
+ * A try-catch block is used to gracefully handle cases where localStorage is disabled or inaccessible (e.g. strict privacy modes).
+ * @returns {number} The saved XP amount, or 0 if not found/error.
+ */
+export const loadSavedXP = () => {
+  try {
+    const saved = localStorage.getItem('pomodoro_xp');
+    return saved ? parseInt(saved, 10) : 0;
+  } catch (error) {
+    console.error('Failed to load XP from localStorage. Defaulting to 0.', error);
+    return 0;
+  }
+};
 
-const RANKS = [
-  { maxLevel: 5, title: 'Novice Scrapper' },
-  { maxLevel: 10, title: 'Cyber Junkie' },
-  { maxLevel: 20, title: 'Neon Hacker' },
-  { maxLevel: 30, title: 'Grid Runner' },
-  { maxLevel: 50, title: 'Cyberpunk Legend' },
-  { maxLevel: Infinity, title: 'Ascendant AI' }
-];
+/**
+ * Saves the current XP to localStorage.
+ * This ensures the user doesn't lose their hard-earned progress when they close the browser.
+ * @param {number} xp - The total XP to save.
+ */
+export const saveXP = (xp) => {
+  try {
+    localStorage.setItem('pomodoro_xp', xp.toString());
+  } catch (error) {
+    console.error('Failed to save XP to localStorage.', error);
+  }
+};
 
-export function getLevel(totalXp) {
-  return Math.floor(totalXp / 1000) + 1;
-}
+export const getLevel = (xp) => {
+  return Math.floor(xp / 100) + 1;
+};
 
-export function getRankTitle(level) {
-  const rank = RANKS.find(r => level <= r.maxLevel);
-  return rank ? rank.title : 'Ascendant AI';
-}
+export const getRankTitle = (level) => {
+  if (level < 5) return 'Novice';
+  if (level < 10) return 'Apprentice';
+  if (level < 20) return 'Adept';
+  return 'Master';
+};
 
-export function getXPProgressPercent(totalXp) {
-  const currentLevelXP = totalXp % 1000;
-  return (currentLevelXP / 1000) * 100;
-}
+export const getXPProgressPercent = (xp) => {
+  return xp % 100;
+};
