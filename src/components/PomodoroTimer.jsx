@@ -2,31 +2,32 @@ import React, { useState, useEffect } from 'react';
 
 // Why free-floating studio styling: Removing square border boxes around the timer enables majestic 7.5rem typography to float seamlessly directly over the center of the user's high-definition wallpaper, emulating Apple Design Award winning study suites like Forest!
 export default function PomodoroTimer({ activeTask, onCompleteTask }) {
-  const [timeLeft, setTimeLeft] = useState(25 * 60);
+  const [timeLeft, setTimeLeft] = useState(1500); // 25 minutes default
   const [isActive, setIsActive] = useState(false);
-  const [mode, setMode] = useState('focus'); // 'focus', 'shortBreak', 'debug'
+  const [mode, setMode] = useState('pomodoro'); // 'pomodoro' | 'shortBreak' | 'longBreak'
 
+  // Why useEffect: React hooks safely manage setInterval lifecycles without causing memory leaks or UI re-render lags during active focus sprints.
   useEffect(() => {
     let interval = null;
     if (isActive && timeLeft > 0) {
       interval = setInterval(() => {
-        setTimeLeft(time => time - 1);
+        setTimeLeft((prevTime) => prevTime - 1);
       }, 1000);
-    } else if (isActive && timeLeft === 0) {
-      clearInterval(interval);
+    } else if (timeLeft === 0 && isActive) {
       setIsActive(false);
-      if (activeTask && mode !== 'shortBreak') {
+      // Automatically complete the linked task if active during pomodoro mode!
+      if (mode === 'pomodoro' && activeTask && onCompleteTask) {
         onCompleteTask(activeTask.id);
       }
     }
     return () => clearInterval(interval);
   }, [isActive, timeLeft, activeTask, mode, onCompleteTask]);
 
-  // Spacebar to start/pause timer
+  // Why global spacebar listener: Enabling developers and students to start/pause their timer via Spacebar avoids breaking typing focus to touch a mouse!
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
-      if (e.code === 'Space') {
+      if (e.code === 'Space' || e.key === ' ') {
         e.preventDefault();
         setIsActive(prev => !prev);
       }
@@ -45,108 +46,134 @@ export default function PomodoroTimer({ activeTask, onCompleteTask }) {
     setIsActive(!isActive);
   };
 
+  const resetTimer = () => {
+    setIsActive(false);
+    if (mode === 'pomodoro') setTimeLeft(1500);
+    if (mode === 'shortBreak') setTimeLeft(300);
+    if (mode === 'longBreak') setTimeLeft(900);
+  };
+
   const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
-    const s = (seconds % 60).toString().padStart(2, '0');
-    return `${m}:${s}`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
-    <div style={{ textAlign: 'center', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-      {/* Session Pill Badge */}
-      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(0, 0, 0, 0.65)', backdropFilter: 'blur(10px)', border: '1px solid rgba(0, 240, 255, 0.4)', padding: '0.4rem 1.2rem', borderRadius: '30px', color: '#00f0ff', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '2px', marginBottom: '1.2rem', boxShadow: '0 0 20px rgba(0, 240, 255, 0.25)' }}>
-        <span style={{ display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%', background: isActive ? '#00f0ff' : '#ff007f', boxShadow: isActive ? '0 0 10px #00f0ff' : 'none' }}></span>
-        {mode === 'focus' ? 'DEEP FOCUS REED' : mode === 'shortBreak' ? 'RECHARGE INTERVAL' : 'INSTANT TEST'}
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', zIndex: 20 }}>
       
-      {/* Active Target Banner */}
+      {/* Active Task Floating Pill */}
       {activeTask ? (
-        <div style={{ marginBottom: '0.5rem', background: 'linear-gradient(90deg, rgba(255, 0, 127, 0.2), rgba(0, 240, 255, 0.2))', border: '1px solid #ff007f', padding: '0.5rem 1.5rem', borderRadius: '20px', color: '#ffffff', fontWeight: '800', fontSize: '1.1rem', textShadow: '0 0 10px rgba(255, 0, 127, 0.8)', boxShadow: '0 0 25px rgba(255, 0, 127, 0.4)' }}>
-          🎯 ACTIVE TARGET: {activeTask.text}
+        <div style={{ 
+          background: 'rgba(255, 0, 127, 0.25)', 
+          border: '1px solid #ff007f', 
+          padding: '0.45rem 1.2rem', 
+          borderRadius: '30px', 
+          marginBottom: '1rem',
+          color: '#ff007f',
+          fontWeight: '800',
+          fontSize: '0.9rem',
+          letterSpacing: '1px',
+          boxShadow: '0 0 20px rgba(255, 0, 127, 0.4)',
+          textTransform: 'uppercase'
+        }}>
+          🔥 FOCUSING ON: {activeTask.text}
         </div>
       ) : (
-        <div style={{ marginBottom: '0.5rem', opacity: 0.7, fontSize: '0.95rem', fontWeight: '600', color: '#cbd5e1', background: 'rgba(0,0,0,0.4)', padding: '0.3rem 1rem', borderRadius: '15px' }}>
-          ✨ Select an item from your study sidebar to track focus progression
+        <div style={{ 
+          background: 'rgba(0, 240, 255, 0.15)', 
+          border: '1px solid rgba(0, 240, 255, 0.3)', 
+          padding: '0.45rem 1.2rem', 
+          borderRadius: '30px', 
+          marginBottom: '1rem',
+          color: '#00f0ff',
+          fontWeight: '700',
+          fontSize: '0.85rem',
+          letterSpacing: '1px',
+          opacity: 0.85
+        }}>
+          🌿 FREE FOCUS SESSION — Select a task from your studio sidebar to unlock puzzle tiles!
         </div>
       )}
 
-      {/* Majestic Hero Floating Time Dial */}
-      <div style={{ 
-        fontSize: '7.5rem', 
-        fontWeight: '900', 
-        margin: '0.2rem 0 1.5rem 0', 
-        color: '#ffffff',
-        fontFamily: "'Courier New', Courier, monospace",
-        letterSpacing: '-4px',
+      {/* Majestic Hero Typography Time Display */}
+      <div style={{
+        fontSize: '8rem',
+        fontWeight: '900',
         lineHeight: 1,
-        textShadow: isActive ? '0 0 45px rgba(0, 240, 255, 0.9), 0 0 80px rgba(0, 240, 255, 0.5)' : '0 10px 30px rgba(0, 0, 0, 0.8), 0 0 20px rgba(255, 255, 255, 0.25)',
-        transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)',
-        userSelect: 'none'
+        letterSpacing: '4px',
+        marginBottom: '1.2rem',
+        background: isActive ? 'linear-gradient(180deg, #ffffff 30%, #00f0ff 100%)' : 'linear-gradient(180deg, #ffffff 40%, #a0aec0 100%)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        filter: isActive ? 'drop-shadow(0 0 35px rgba(0, 240, 255, 0.65))' : 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.15))',
+        fontFamily: 'monospace',
+        transition: 'all 0.5s ease'
       }}>
         {formatTime(timeLeft)}
       </div>
 
       {/* Primary Control Pills */}
-      <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', marginBottom: '1rem', width: '100%' }}>
+      <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', marginBottom: '1.2rem', width: '100%' }}>
         <button 
           className="btn btn-primary" 
           onClick={toggleTimer} 
-          style={{ width: '160px', padding: '0.8rem 1.5rem', fontSize: '1.1rem', borderRadius: '35px', fontWeight: '800', letterSpacing: '1px' }}
+          style={{ 
+            minWidth: '160px', 
+            padding: '0.8rem 2rem', 
+            fontSize: '1.1rem',
+            background: isActive ? 'linear-gradient(135deg, #ff007f, #ff416c)' : 'linear-gradient(135deg, #00f0ff, #0072ff)',
+            boxShadow: isActive ? '0 0 25px rgba(255, 0, 127, 0.6)' : '0 0 25px rgba(0, 240, 255, 0.6)'
+          }}
         >
           {isActive ? '⏸ PAUSE' : '▶ START'}
         </button>
         <button 
           className="btn" 
-          onClick={() => {
-            setIsActive(false);
-            if (mode === 'focus') setTimeLeft(25 * 60);
-            else if (mode === 'shortBreak') setTimeLeft(5 * 60);
-            else setTimeLeft(5);
-          }} 
-          style={{ width: '120px', padding: '0.8rem 1.5rem', fontSize: '1.05rem', borderRadius: '35px', background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.2)' }}
+          onClick={resetTimer} 
+          style={{ 
+            minWidth: '120px', 
+            padding: '0.8rem 1.8rem', 
+            fontSize: '1.1rem',
+            background: 'rgba(255, 255, 255, 0.1)',
+            border: '1px solid rgba(255, 255, 255, 0.2)',
+            color: '#cbd5e1'
+          }}
         >
-          ↺ RESET
+          🔄 RESET
         </button>
       </div>
 
       {/* Keyboard hints */}
-      <div style={{ fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '2rem', opacity: 0.8 }}>
-        [SPACE: Start/Pause] | [ESC: Hide Studio UI]
+      <div style={{ fontSize: '0.85rem', color: '#cbd5e1', marginBottom: '2rem', background: 'rgba(0,0,0,0.5)', padding: '0.4rem 1rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.1)', fontWeight: '600' }}>
+        [SPACE: Start/Pause] | [KEY F: Full-Screen] | [KEY M: Mute Radio] | [ESC: Hide UI]
       </div>
 
       {/* Minimalist Duration Selectors */}
       <div style={{ display: 'inline-flex', gap: '0.5rem', background: 'rgba(0, 0, 0, 0.55)', padding: '0.4rem 0.6rem', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.12)' }}>
         <button 
-          onClick={() => setPreset('focus', 25 * 60)} 
-          style={{ 
-            background: mode === 'focus' ? 'linear-gradient(135deg, #00f0ff, #0072ff)' : 'transparent', 
-            color: mode === 'focus' ? '#000' : '#cbd5e1', 
-            border: 'none', padding: '0.4rem 1rem', borderRadius: '20px', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s ease' 
-          }}
+          className={`btn ${mode === 'pomodoro' ? 'btn-primary' : ''}`} 
+          onClick={() => setPreset('pomodoro', 1500)}
+          style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', border: 'none', background: mode === 'pomodoro' ? '#00f0ff' : 'transparent', color: mode === 'pomodoro' ? '#000000' : '#cbd5e1' }}
         >
-          25m Study
+          ⏱️ 25M FOCUS
         </button>
         <button 
-          onClick={() => setPreset('shortBreak', 5 * 60)} 
-          style={{ 
-            background: mode === 'shortBreak' ? 'linear-gradient(135deg, #00f0ff, #0072ff)' : 'transparent', 
-            color: mode === 'shortBreak' ? '#000' : '#cbd5e1', 
-            border: 'none', padding: '0.4rem 1rem', borderRadius: '20px', fontWeight: '700', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s ease' 
-          }}
+          className={`btn ${mode === 'shortBreak' ? 'btn-primary' : ''}`} 
+          onClick={() => setPreset('shortBreak', 300)}
+          style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', border: 'none', background: mode === 'shortBreak' ? '#00f0ff' : 'transparent', color: mode === 'shortBreak' ? '#000000' : '#cbd5e1' }}
         >
-          5m Rest
+          ☕ 5M REST
         </button>
         <button 
-          onClick={() => setPreset('debug', 5)} 
-          style={{ 
-            background: mode === 'debug' ? 'linear-gradient(135deg, #ff007f, #7000ff)' : 'transparent', 
-            color: mode === 'debug' ? '#fff' : '#ff007f', 
-            border: 'none', padding: '0.4rem 1rem', borderRadius: '20px', fontWeight: '800', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s ease' 
-          }}
+          className={`btn ${mode === 'longBreak' ? 'btn-primary' : ''}`} 
+          onClick={() => setPreset('longBreak', 900)}
+          style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', border: 'none', background: mode === 'longBreak' ? '#00f0ff' : 'transparent', color: mode === 'longBreak' ? '#000000' : '#cbd5e1' }}
         >
-          ⚡ 5s Test
+          🌴 15M BREAK
         </button>
       </div>
+
     </div>
   );
 }

@@ -15,6 +15,7 @@ export default function ArcadeDashboard() {
   const [artworks, setArtworks] = useState([]);
   const [isUiHidden, setIsUiHidden] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [totalXp, setTotalXp] = useState(0);
 
   const fileInputRef = useRef(null);
@@ -34,16 +35,45 @@ export default function ArcadeDashboard() {
   
   const isVictory = tasks.length > 0 && completedCount === tasks.length;
 
-  // Why useEffect: Keyboard shortcuts allow users to easily toggle wallpaper inspection mode via ESC key.
+  // Why fullscreen synchronization: Listening to native browser fullscreenchange events ensures our React UI state remains 100% aligned even if the user exits fullscreen using F11 or browser menus.
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.warn('Unable to initialize browser full-screen mode:', err);
+      });
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  };
+
+  // Why useEffect: Keyboard shortcuts allow users to easily toggle wallpaper inspect mode (ESC) and full-screen immersion (F key).
   useEffect(() => {
     const handleKeyDown = (e) => {
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+      
       if (e.key === 'Escape') {
-        setIsUiHidden(prev => !prev);
+        // If we are currently hiding UI, restore controls when pressing ESC!
+        if (isUiHidden) {
+          setIsUiHidden(false);
+        } else if (!document.fullscreenElement) {
+          setIsUiHidden(prev => !prev);
+        }
+      } else if (e.key === 'f' || e.key === 'F') {
+        e.preventDefault();
+        toggleFullscreen();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [isUiHidden]);
 
   // Why this logic: Clicking continue transitions the user to the next arcade level and automatically rotates the background artwork!
   const handleContinue = () => {
@@ -194,8 +224,8 @@ export default function ArcadeDashboard() {
             </div>
           </div>
 
-          {/* Controls: Theme Selector & Hide UI Toggle */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+          {/* Controls: Theme Selector, Full-Screen & Hide UI Toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(0, 0, 0, 0.4)', padding: '0.25rem 0.5rem', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.1)', flexWrap: 'wrap' }}>
               {artworks.map((art, idx) => {
                 const isSelected = activeArtworkIndex === idx;
@@ -246,6 +276,24 @@ export default function ArcadeDashboard() {
                 onChange={handleFileUpload}
               />
             </div>
+
+            {/* FULL SCREEN TOGGLE BUTTON */}
+            <button 
+              className="btn" 
+              onClick={toggleFullscreen}
+              title="Toggle edge-to-edge full-screen studio immersion (Key F)"
+              style={{ 
+                background: isFullscreen ? 'linear-gradient(135deg, #ff007f, #00f0ff)' : 'rgba(255, 0, 127, 0.15)', 
+                borderColor: '#ff007f', 
+                color: isFullscreen ? '#000000' : '#ff007f', 
+                padding: '0.45rem 0.9rem', 
+                fontSize: '0.82rem',
+                fontWeight: '800',
+                boxShadow: isFullscreen ? '0 0 15px rgba(255,0,127,0.5)' : 'none'
+              }}
+            >
+              {isFullscreen ? '🗗 EXIT FULL SCREEN' : '⛶ FULL SCREEN'}
+            </button>
 
             <button 
               className="btn" 
