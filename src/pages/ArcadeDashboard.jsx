@@ -78,7 +78,7 @@ export default function ArcadeDashboard() {
   // Why useEffect: Keyboard shortcuts allow users to easily toggle wallpaper inspect mode (ESC) and full-screen immersion (F key).
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
       
       if (e.key === 'Escape') {
         // If we are currently hiding UI, restore controls when pressing ESC!
@@ -137,7 +137,7 @@ export default function ArcadeDashboard() {
     }
   };
 
-  const activeArtwork = artworks[activeArtworkIndex]?.imagePath || '/assets/cyberpunk_city.jpg';
+  const activeArtwork = artworks[activeArtworkIndex]?.imagePath || 'https://images.unsplash.com/photo-1542051841857-5f90071e7989?auto=format&fit=crop&w=1920&q=85';
 
   return (
     <div style={{ position: 'relative', width: '100%', minHeight: '100vh', overflow: 'hidden' }}>
@@ -232,7 +232,7 @@ export default function ArcadeDashboard() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: '1rem', 
             background: 'rgba(0,0,0,0.5)', padding: '0.4rem 1.2rem', borderRadius: '25px', 
-            border: '1px solid rgba(0, 240, 255, 0.25)', minWidth: '280px', flex: 1, maxWidth: '400px'
+            border: '1px solid rgba(0, 240, 255, 0.25)', minWidth: '260px', flex: 1, maxWidth: '380px'
           }}>
             <div style={{ color: '#00f0ff', fontWeight: '800', fontSize: '0.82rem' }}>
               LVL {currentLevel}
@@ -245,49 +245,68 @@ export default function ArcadeDashboard() {
             </div>
           </div>
 
-          {/* Controls: Theme Selector, Full-Screen & Hide UI Toggle */}
+          {/* Controls: Theme Picker, Full-Screen & Hide UI Toggle */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(0, 0, 0, 0.4)', padding: '0.25rem 0.5rem', borderRadius: '30px', border: '1px solid rgba(255, 255, 255, 0.1)', flexWrap: 'wrap' }}>
-              {artworks.map((art, idx) => {
-                const isSelected = activeArtworkIndex === idx;
-                return (
-                  <button 
-                    key={art.id || idx} 
-                    onClick={() => setActiveArtworkIndex(idx)}
-                    style={{
-                      background: isSelected ? 'linear-gradient(135deg, #00f0ff, #0072ff)' : 'transparent',
-                      color: isSelected ? '#000000' : '#a0aec0',
-                      border: 'none',
-                      padding: '0.3rem 0.8rem',
-                      borderRadius: '20px',
-                      fontWeight: isSelected ? '800' : '600',
-                      fontSize: '0.8rem',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    {(art.title || 'Theme').toUpperCase()}
-                  </button>
-                );
-              })}
+            
+            {/* Why minimalist dropdown picker: Replacing 10 wrapping buttons with an intuitive selector and cycling arrows keeps the navbar spotless while enabling rapid browsing of high-definition photography! */}
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(0, 0, 0, 0.65)', padding: '0.3rem 0.7rem', borderRadius: '30px', border: '1px solid rgba(0, 240, 255, 0.35)' }}>
+              <button 
+                onClick={() => setActiveArtworkIndex((prev) => (prev - 1 + artworks.length) % artworks.length)}
+                style={{ background: 'transparent', border: 'none', color: '#00f0ff', cursor: 'pointer', fontSize: '1.05rem', fontWeight: '900', padding: '0 0.2rem' }}
+                title="Previous Wallpaper Theme"
+              >
+                ◀
+              </button>
+              
+              <select 
+                value={activeArtworkIndex}
+                onChange={(e) => setActiveArtworkIndex(Number(e.target.value))}
+                style={{
+                  background: 'transparent',
+                  color: '#ffffff',
+                  border: 'none',
+                  fontWeight: '800',
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  padding: '0 0.2rem',
+                  maxWidth: '190px'
+                }}
+              >
+                {artworks.map((art, idx) => (
+                  <option key={art.id || idx} value={idx} style={{ background: '#0a0e19', color: '#ffffff', fontWeight: '700' }}>
+                    🎨 {art.title} ({art.genre || 'Theme'})
+                  </option>
+                ))}
+              </select>
+
+              <button 
+                onClick={() => setActiveArtworkIndex((prev) => (prev + 1) % artworks.length)}
+                style={{ background: 'transparent', border: 'none', color: '#00f0ff', cursor: 'pointer', fontSize: '1.05rem', fontWeight: '900', padding: '0 0.2rem' }}
+                title="Next Wallpaper Theme"
+              >
+                ▶
+              </button>
+              
+              <div style={{ height: '16px', width: '1px', background: 'rgba(255,255,255,0.2)', margin: '0 0.2rem' }}></div>
               
               <button
                 onClick={() => fileInputRef.current?.click()}
                 style={{
-                  background: 'rgba(0, 240, 255, 0.15)',
+                  background: 'rgba(0, 240, 255, 0.18)',
                   color: '#00f0ff',
-                  border: '1px dashed #00f0ff',
-                  padding: '0.3rem 0.9rem',
+                  border: '1px solid rgba(0, 240, 255, 0.4)',
+                  padding: '0.25rem 0.75rem',
                   borderRadius: '20px',
                   fontWeight: '800',
-                  fontSize: '0.8rem',
+                  fontSize: '0.78rem',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
-                  marginLeft: '0.2rem',
-                  letterSpacing: '0.5px'
+                  letterSpacing: '0.5px',
+                  whiteSpace: 'nowrap'
                 }}
               >
-                📤 UPLOAD WALLPAPER
+                📤 UPLOAD YOUR OWN
               </button>
               <input
                 type="file"
