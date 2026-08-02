@@ -1,89 +1,170 @@
-# 🌳 Pomodoro Puzzle Studio | Gamified AI Productivity & Lofi Arcade
+<div align="center">
 
-![Pomodoro Studio Showcase](public/assets/showcase_preview.png)
+# 🌳 Pomodoro Studio
 
-A high-performance, studio-grade productivity suite inspired by top-tier focus applications like **Forest** and **Lofi Girl**. Combining gamified Pomodoro study sessions with responsive digital artwork wallpaper matrix unlocking, built-in ambient Web Audio Lofi Radio synthesizers, and seamless holographic styling.
+### *A Gamified Focus Timer That Rewards Your Productivity*
 
----
+**Unlock stunning HD wallpaper puzzles as you complete tasks. Stay focused with ambient lofi soundscapes.**
 
-## 🌟 Key Product Features & Design Psychology (The 'Why')
-
-1. **The Authoritative Hero Centerpiece (`7.5rem` Free-Floating Timepiece):**
-   * **The 'Why':** Serious productivity tools require a clear visual hierarchy. By removing bulky containment boxes and anchoring massive countdown typography directly in the center of the display over high-definition wallpapers, users experience immediate focus immersion.
-2. **Dynamic Matrix Wallpaper Revelation:**
-   * Completing Pomodoro intervals or checking off todos gradually melts away frosted matrix fog from your screen, slice by slice, uncovering stunning desktop artwork (*Cyberpunk City*, *Neon Supercar*, and *Anime Landscape*).
-   * Includes a smart center-out reveal algorithm that illuminates prominent visual quadrants first.
-3. **Integrated Web Audio Lofi Radio Synthesizer (`LofiPlayer.jsx`):**
-   * Built directly into the collapsible side studio drawer. Leverages standard browser Web Audio API generators to synthesize soothing **Cyberpunk Rain** (low-pass pink noise), **Highway Hum**, and relaxing lofi melody progressions without external tabs or streaming bottlenecks.
-4. **Gamified Focus XP & Rank Progression:**
-   * Every completed task awards **+250 XP**, advancing users through competitive rank tiers (*Level 1 Novice Scripter* ➔ *Level 2 Cyber Ninja* ➔ *Level 3 Neo-Tokyo Legend*) with automated end-of-session **Victory Flex Social Trophy Cards**!
-5. **1-Click Wallpaper Inspect & Collapsible Study Studio Drawer:**
-   * With a click of the **"📁 STUDY STUDIO"** tab or pressing **ESC**, all interactive UI panels smoothly slide off-screen or dissolve, leaving a 100% unobstructed view of the earned desktop artwork.
+[![Live Demo](https://img.shields.io/badge/▶_Live_Demo-00f0ff?style=for-the-badge&logo=googlechrome&logoColor=000)](http://localhost:5173/)
+[![React](https://img.shields.io/badge/React_19-61DAFB?style=for-the-badge&logo=react&logoColor=000)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite_8-646CFF?style=for-the-badge&logo=vite&logoColor=fff)](https://vite.dev/)
+[![Tests](https://img.shields.io/badge/15_Tests_Passing-4fc08d?style=for-the-badge&logo=vitest&logoColor=fff)](https://vitest.dev/)
 
 ---
 
-## 🏗️ System Architecture & Engineering Standards
+<img src="public/assets/hero_screenshot.png" alt="Pomodoro Studio — Tokyo Night Theme with Lofi Radio and Focus Timer" width="100%" style="border-radius: 12px;" />
+
+*Tokyo Night theme · 25-minute focus session · Lofi Beats playing · Full-screen immersion mode*
+
+</div>
+
+---
+
+## ✨ What Makes This Different
+
+Most Pomodoro apps are boring countdown clocks. **Pomodoro Studio** transforms focus sessions into a visual reward system inspired by [Forest](https://www.forestapp.cc/) and [LifeAt](https://www.lifeat.io/):
+
+| Feature | Description |
+|---------|-------------|
+| 🧩 **Puzzle Rewards** | Each completed task reveals a piece of a hidden HD wallpaper. Complete all tasks to unlock the full masterpiece. |
+| 🎧 **6-Channel Lofi Radio** | Studio-recorded ambient soundscapes — City Rain, Campfire, Ocean Waves, Lofi Beats, Thunder Storm, Night Traffic. |
+| 📸 **10 HD Themes** | Curated real-world photography from Tokyo streets to Alpine forests to the Northern Lights. |
+| 📤 **Custom Wallpapers** | Upload your own images and use them as puzzle backgrounds. |
+| ⛶ **Full-Screen Mode** | Edge-to-edge distraction-free immersion. Press `F` to toggle. |
+| 🏆 **XP & Leveling** | Earn 50 XP per completed task. Level up from *Novice* → *Apprentice* → *Adept* → *Master*. |
+| 🔔 **Smart Notifications** | Audible bell chime + browser notification when your timer completes, even if you switched tabs. |
+| 💾 **Persistent Progress** | Tasks and XP survive page refreshes via localStorage. |
+| ⌨️ **Keyboard Shortcuts** | `SPACE` start/pause · `F` fullscreen · `M` mute radio · `ESC` hide UI |
+
+---
+
+## 🎨 Theme Gallery
+
+<div align="center">
+
+| ⛩️ Tokyo Night | 🌲 Misty Alps | 🌿 Kyoto Garden |
+|:---:|:---:|:---:|
+| Urban Cyberpunk | Alpine Nature | Zen Nature |
+
+| ☕ Cozy Cafe | 🌌 Milky Way | 🏙️ Manhattan Sky |
+|:---:|:---:|:---:|
+| Minimalist Study | Astronomy | Urban Skyline |
+
+| 🌧️ Rainy Window | 🏖️ Amalfi Sunset | 🏔️ Aurora Borealis | 🏎️ Night Highway |
+|:---:|:---:|:---:|:---:|
+| Cozy Atmosphere | Coastal Peace | Ethereal Nature | Midnight Drive |
+
+</div>
+
+---
+
+## 🏗️ Architecture
 
 ```mermaid
 graph TD
-    subgraph Frontend [React Functional UI Layer]
-        AD[ArcadeDashboard.jsx] --> PT[PomodoroTimer.jsx]
-        AD --> TL[TaskList.jsx]
-        AD --> PB[PuzzleBoard.jsx]
-        AD --> LP[LofiPlayer.jsx]
-        AD --> VT[VictoryTrophy.jsx]
-        PB --> PTile[PuzzleTile.jsx]
+    subgraph UI ["React Functional Components"]
+        AD["ArcadeDashboard"] --> PT["PomodoroTimer"]
+        AD --> TL["TaskList"]
+        AD --> PB["PuzzleBoard"]
+        AD --> LP["LofiPlayer"]
+        AD --> VT["VictoryTrophy"]
+        PB --> PTile["PuzzleTile × N"]
     end
 
-    subgraph BusinessLogic [Dedicated Business & Service Layer]
-        XP[xpService.js - Pure Leveling Algorithms]
-        IMG[imageService.js - Asset & Metadata Directory]
+    subgraph Services ["Service Layer"]
+        XP["xpService.js"]
+        IMG["imageService.js"]
     end
 
-    subgraph AudioEngine [Native Browser Synthesis]
-        WEB[Web Audio API Oscillators & Pink Noise Filters]
+    subgraph Audio ["Audio Engine"]
+        MP3["HTML5 Audio · 6 MP3 Loops"]
+        WAC["Web Audio API · Completion Chime"]
+    end
+
+    subgraph Storage ["Persistence"]
+        LS["localStorage · Tasks + XP + Wallpapers"]
     end
 
     AD --> XP
     AD --> IMG
-    LP --> WEB
+    LP --> MP3
+    PT --> WAC
+    AD --> LS
 ```
 
-### Strict Frontend Standards Applied:
-* **Separation of Concerns:** Zero business calculation logic inside UI components. All gamification math (`xpService.js`) and asset descriptions (`imageService.js`) live in dedicated service layers for simplified testing and debugging.
-* **The "Seamless React Bounce" CSS Reset:** Strictly enforces `margin: 0; padding: 0; width: 100%; min-height: 100vh;` on `html, body, #root` with solid HSL backdrop coloring to eliminate harsh white edges during browser scroll bounce behaviors.
-* **100% Automated Testing Validation (The "No-Mistakes Pipeline"):** All gamification thresholds, timer intervals, and dynamic matrix sizing formulas are covered by robust Vitest unit test suites (`src/specs/*.test.js`).
+### Design Decisions
+
+- **Strict Layered Architecture** — Zero business logic inside UI components. XP math and image metadata live in dedicated service files for clean testing and debugging.
+- **One-Way Task Completion** — Completed tasks cannot be unchecked to prevent XP duplication exploits.
+- **Cross-Browser Fullscreen** — Supports standard `requestFullscreen()`, WebKit, and MS vendor prefixes.
+- **Seamless React Bounce** — CSS reset eliminates white edges during mobile scroll bounce by applying solid dark backgrounds to `html, body, #root`.
 
 ---
 
-## 🚀 Getting Started & Local Development
+## 🚀 Quick Start
 
-### 1. Installation
-Clone the repository and install project dependencies via npm:
 ```bash
+# Clone the repo
 git clone https://github.com/1himanshu1804442/pomodoro-puzzle-studio.git
 cd pomodoro-puzzle-studio
-npm install
-```
 
-### 2. Run Local Development Server
-Start the ultra-fast Vite development environment with Hot Module Replacement:
-```bash
+# Install dependencies
+npm install
+
+# Start the dev server
 npm run dev
 ```
-Navigate to `http://localhost:5173/` in your browser.
 
-### 3. Run Automated Test Suites
-Verify application logic integrity using Vitest:
+Open [http://localhost:5173](http://localhost:5173) in your browser.
+
+### Run Tests
+
 ```bash
 npx vitest run
 ```
 
+```
+ ✓ src/specs/timer.test.js          (2 tests)
+ ✓ src/specs/puzzleMath.test.js     (4 tests)
+ ✓ src/specs/storage.test.js        (4 tests)
+ ✓ src/specs/gamification.test.js   (5 tests)
+
+ Test Files  4 passed (4)
+      Tests  15 passed (15)
+```
+
 ---
 
-## 📸 Interactive Showcase
-* **Free-Play Mode:** When your checklist is clear (`tasks = 0`), the studio opens up in full widescreen artwork view so you can enjoy high-definition wallpapers instantly.
-* **Studio Drawer Control:** Docked seamlessly on the right edge, keeping tasks and ambient soundscapes readily accessible without obstructing your central viewing axis.
+## ⌨️ Keyboard Shortcuts
+
+| Key | Action |
+|-----|--------|
+| `Space` | Start / Pause timer |
+| `F` | Toggle full-screen mode |
+| `M` | Mute / unmute lofi radio |
+| `Esc` | Hide UI (wallpaper inspect mode) |
 
 ---
-*Built with React, Vite, Web Audio API, and Vanilla CSS by @1himanshu1804442*
+
+## 🛠️ Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Framework** | React 19 (Functional Components + Hooks) |
+| **Build Tool** | Vite 8 |
+| **Styling** | Vanilla CSS + Glassmorphism Design System |
+| **Audio** | HTML5 `<audio>` (ambient loops) + Web Audio API (chime) |
+| **Testing** | Vitest 4 + Testing Library |
+| **Persistence** | localStorage (Tasks, XP, Custom Wallpapers) |
+| **Notifications** | Browser Notification API |
+
+---
+
+<div align="center">
+
+**Built with ☕ and focus by [@1himanshu1804442](https://github.com/1himanshu1804442)**
+
+*If this helped you stay focused, consider giving it a ⭐*
+
+</div>
