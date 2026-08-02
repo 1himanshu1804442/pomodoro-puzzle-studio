@@ -38,19 +38,40 @@ export default function ArcadeDashboard() {
   // Why fullscreen synchronization: Listening to native browser fullscreenchange events ensures our React UI state remains 100% aligned even if the user exits fullscreen using F11 or browser menus.
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
+      const isFull = !!(document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement);
+      setIsFullscreen(isFull);
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+    };
   }, []);
 
+  // Why universal cross-browser fullscreen handling: Supporting standard HTML5 along with WebKit and Microsoft proprietary extensions ensures edge-to-edge window expansion never stalls across varying desktop browsers!
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(err => {
-        console.warn('Unable to initialize browser full-screen mode:', err);
-      });
+    const doc = document.documentElement;
+    const isFull = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
+
+    if (!isFull) {
+      if (doc.requestFullscreen) {
+        doc.requestFullscreen().catch(err => console.warn('Full-screen request aborted:', err));
+      } else if (doc.webkitRequestFullscreen) {
+        doc.webkitRequestFullscreen();
+      } else if (doc.msRequestFullscreen) {
+        doc.msRequestFullscreen();
+      }
     } else {
-      document.exitFullscreen().catch(() => {});
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else if (document.msExitFullscreen) {
+        document.msExitFullscreen();
+      }
     }
   };
 
@@ -63,7 +84,7 @@ export default function ArcadeDashboard() {
         // If we are currently hiding UI, restore controls when pressing ESC!
         if (isUiHidden) {
           setIsUiHidden(false);
-        } else if (!document.fullscreenElement) {
+        } else if (!document.fullscreenElement && !document.webkitFullscreenElement) {
           setIsUiHidden(prev => !prev);
         }
       } else if (e.key === 'f' || e.key === 'F') {
@@ -289,7 +310,8 @@ export default function ArcadeDashboard() {
                 padding: '0.45rem 0.9rem', 
                 fontSize: '0.82rem',
                 fontWeight: '800',
-                boxShadow: isFullscreen ? '0 0 15px rgba(255,0,127,0.5)' : 'none'
+                boxShadow: isFullscreen ? '0 0 15px rgba(255,0,127,0.5)' : 'none',
+                cursor: 'pointer'
               }}
             >
               {isFullscreen ? '🗗 EXIT FULL SCREEN' : '⛶ FULL SCREEN'}

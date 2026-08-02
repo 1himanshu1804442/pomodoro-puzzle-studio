@@ -97,18 +97,17 @@ export default function PomodoroTimer({ activeTask, onCompleteTask }) {
       )}
 
       {/* Majestic Hero Typography Time Display */}
+      {/* Why explicit color and textShadow instead of background-clip: Using standard font coloring prevents Chromium GPU rendering bugs that turned gradient timers into solid cyan block boxes when transitions fired! */}
       <div style={{
-        fontSize: '8rem',
+        fontSize: '8.5rem',
         fontWeight: '900',
         lineHeight: 1,
-        letterSpacing: '4px',
+        letterSpacing: '5px',
         marginBottom: '1.2rem',
-        background: isActive ? 'linear-gradient(180deg, #ffffff 30%, #00f0ff 100%)' : 'linear-gradient(180deg, #ffffff 40%, #a0aec0 100%)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
-        filter: isActive ? 'drop-shadow(0 0 35px rgba(0, 240, 255, 0.65))' : 'drop-shadow(0 0 15px rgba(255, 255, 255, 0.15))',
+        color: '#ffffff',
+        textShadow: isActive ? '0 0 35px #00f0ff, 0 0 70px rgba(0, 240, 255, 0.5)' : '0 0 15px rgba(255, 255, 255, 0.2)',
         fontFamily: 'monospace',
-        transition: 'all 0.5s ease'
+        transition: 'color 0.3s ease, text-shadow 0.3s ease'
       }}>
         {formatTime(timeLeft)}
       </div>
