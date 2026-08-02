@@ -1,5 +1,5 @@
 // src/components/LofiPlayer.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 // Why HTML5 Audio instead of pure synthesis: While algorithmic Web Audio math saves file bandwidth, it inherently produces robotic, fizzy noise. Playing real studio-recorded field acoustic loop MP3s guarantees warm, relaxing fidelity identical to Lofi Girl and Noisli!
 export default function LofiPlayer() {
@@ -9,10 +9,15 @@ export default function LofiPlayer() {
   
   const audioRef = useRef(null);
 
-  // Why global keyboard shorting: Allowing pro users to toggle sound playback via the 'M' key keeps developers immersed without reaching for a mouse!
+  // Why useCallback: Wrapping togglePlay in useCallback with an empty dependency array prevents stale closures. The functional updater pattern (prev => !prev) already reads the latest state without needing isPlaying in the dependency array.
+  const togglePlay = useCallback(() => {
+    setIsPlaying(prev => !prev);
+  }, []);
+
+  // Why empty dependency for keyboard effect: Since togglePlay is memoized and uses functional updater, we don't need isPlaying or activeChannel as dependencies. This prevents the listener from being torn down and re-registered on every play/pause toggle.
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
       if (e.key === 'm' || e.key === 'M') {
         e.preventDefault();
         togglePlay();
@@ -20,9 +25,9 @@ export default function LofiPlayer() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isPlaying, activeChannel]);
+  }, [togglePlay]);
 
-  // Why sync volume immediately: Maintaining smooth volume synchronization across track switching prevents jarring audio spikes.
+  // Why separate effect for audio sync: Keeping playback state synchronization in its own effect with explicit dependencies ensures volume changes, channel switches, and play/pause all respond correctly.
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.volume = volume;
@@ -36,10 +41,6 @@ export default function LofiPlayer() {
       }
     }
   }, [activeChannel, isPlaying, volume]);
-
-  const togglePlay = () => {
-    setIsPlaying(prev => !prev);
-  };
 
   const switchChannel = (ch) => {
     setActiveChannel(ch);

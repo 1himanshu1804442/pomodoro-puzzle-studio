@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
-// Why free-floating studio styling: Removing square border boxes around the timer enables majestic 7.5rem typography to float seamlessly directly over the center of the user's high-definition wallpaper, emulating Apple Design Award winning study suites like Forest!
+// Why free-floating studio styling: Removing square border boxes around the timer enables majestic 8.5rem typography to float seamlessly directly over the center of the user's high-definition wallpaper, emulating Apple Design Award winning study suites like Forest!
 export default function PomodoroTimer({ activeTask, onCompleteTask }) {
   const [timeLeft, setTimeLeft] = useState(1500); // 25 minutes default
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState('pomodoro'); // 'pomodoro' | 'shortBreak' | 'longBreak'
+
+  // Why useRef for AudioContext: We store a single AudioContext reference to avoid creating a new one every time the timer completes. Browsers limit the number of simultaneous AudioContext instances.
+  const audioCtxRef = useRef(null);
 
   // Why useEffect: React hooks safely manage setInterval lifecycles without causing memory leaks or UI re-render lags during active focus sprints.
   useEffect(() => {
@@ -15,6 +18,13 @@ export default function PomodoroTimer({ activeTask, onCompleteTask }) {
       }, 1000);
     } else if (timeLeft === 0 && isActive) {
       setIsActive(false);
+
+      // Play a short completion chime to alert the user, even if they switched tabs
+      playCompletionChime();
+
+      // Fire a browser notification so the user knows their session finished
+      fireCompletionNotification();
+
       // Automatically complete the linked task if active during pomodoro mode!
       if (mode === 'pomodoro' && activeTask && onCompleteTask) {
         onCompleteTask(activeTask.id);
@@ -23,10 +33,60 @@ export default function PomodoroTimer({ activeTask, onCompleteTask }) {
     return () => clearInterval(interval);
   }, [isActive, timeLeft, activeTask, mode, onCompleteTask]);
 
+  // Why Web Audio API synthesis for the chime: Unlike ambient soundscapes which need recorded MP3s for warmth, a brief 0.3-second bell tone is perfectly clean when synthesized. This avoids needing an extra audio file download for a simple notification ding.
+  const playCompletionChime = () => {
+    try {
+      const ctx = audioCtxRef.current || new (window.AudioContext || window.webkitAudioContext)();
+      audioCtxRef.current = ctx;
+
+      // Create a pleasant two-tone bell chime (C5 + E5 harmonics)
+      const now = ctx.currentTime;
+      const frequencies = [523.25, 659.25]; // C5 and E5 for a pleasant major third interval
+
+      frequencies.forEach((freq, i) => {
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(freq, now);
+
+        // Gentle fade-in and fade-out envelope for a clean bell sound
+        gainNode.gain.setValueAtTime(0, now);
+        gainNode.gain.linearRampToValueAtTime(0.3, now + 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.8 + (i * 0.15));
+
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        oscillator.start(now + (i * 0.15));
+        oscillator.stop(now + 1.0 + (i * 0.15));
+      });
+    } catch (error) {
+      console.warn('Could not play completion chime:', error);
+    }
+  };
+
+  // Why browser Notification API: If the user has switched to another browser tab while their timer runs, a native OS notification popup will alert them that their focus session is complete. Without this, completions are silently missed.
+  const fireCompletionNotification = () => {
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') {
+        new Notification('🌳 Pomodoro Studio', {
+          body: `Your ${mode === 'pomodoro' ? '25-minute focus' : 'break'} session is complete! ${activeTask ? `Task: ${activeTask.text}` : 'Great work!'}`,
+          icon: '/favicon.svg'
+        });
+      } else if ('Notification' in window && Notification.permission !== 'denied') {
+        // Request permission for future notifications
+        Notification.requestPermission();
+      }
+    } catch (error) {
+      console.warn('Browser notification unavailable:', error);
+    }
+  };
+
   // Why global spacebar listener: Enabling developers and students to start/pause their timer via Spacebar avoids breaking typing focus to touch a mouse!
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)) return;
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) return;
       if (e.code === 'Space' || e.key === ' ') {
         e.preventDefault();
         setIsActive(prev => !prev);
@@ -43,6 +103,10 @@ export default function PomodoroTimer({ activeTask, onCompleteTask }) {
   };
 
   const toggleTimer = () => {
+    // Request notification permission on first interaction (browsers require user gesture)
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
     setIsActive(!isActive);
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import TaskList from '../components/TaskList';
 import PomodoroTimer from '../components/PomodoroTimer';
 import PuzzleBoard from '../components/PuzzleBoard';
@@ -7,9 +7,22 @@ import LofiPlayer from '../components/LofiPlayer';
 import VictoryTrophy from '../components/VictoryTrophy';
 import { loadSavedXP, saveXP, XP_PER_TASK, getLevel, getRankTitle, getXPProgressPercent } from '../services/xpService';
 
+// Why localStorage keys as constants: Centralizing key strings prevents typo-related silent failures across load/save operations.
+const TASKS_STORAGE_KEY = 'pomodoro_tasks';
+
 // Why this Forest App inspired architecture: Anchoring the focus countdown in the exact screen center above the wallpaper while isolating all todo controls inside a collapsible right-hand drawer projects serious, professional elegance!
 export default function ArcadeDashboard() {
-  const [tasks, setTasks] = useState([]);
+  // Why lazy initializer for tasks: Using a function inside useState causes React to run the localStorage read exactly once on mount rather than on every render. This is the standard React pattern for expensive initial state computation.
+  const [tasks, setTasks] = useState(() => {
+    try {
+      const saved = localStorage.getItem(TASKS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch (err) {
+      console.warn('Could not load tasks from localStorage:', err);
+      return [];
+    }
+  });
+
   const [activeTaskId, setActiveTaskId] = useState(null);
   const [activeArtworkIndex, setActiveArtworkIndex] = useState(0);
   const [artworks, setArtworks] = useState([]);
@@ -26,6 +39,15 @@ export default function ArcadeDashboard() {
     setTotalXp(loadSavedXP());
   }, []);
 
+  // Why persist tasks on every mutation: Previously tasks lived only in React state and were completely lost on page refresh. Now every change is automatically persisted to localStorage so users never lose their session.
+  useEffect(() => {
+    try {
+      localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
+    } catch (err) {
+      console.warn('Could not save tasks to localStorage:', err);
+    }
+  }, [tasks]);
+
   const activeTask = tasks.find(t => t.id === activeTaskId);
   const completedCount = tasks.filter(t => t.completed).length;
   
@@ -34,6 +56,9 @@ export default function ArcadeDashboard() {
   const xpProgress = getXPProgressPercent(totalXp);
   
   const isVictory = tasks.length > 0 && completedCount === tasks.length;
+
+  // Why session XP calculation: The VictoryTrophy needs to display XP earned in this specific session (completedCount * XP_PER_TASK), not the lifetime cumulative total. This fixes the misleading "+500 XP GAINED" display.
+  const sessionXp = completedCount * XP_PER_TASK;
 
   // Why fullscreen synchronization: Listening to native browser fullscreenchange events ensures our React UI state remains 100% aligned even if the user exits fullscreen using F11 or browser menus.
   useEffect(() => {
@@ -52,7 +77,7 @@ export default function ArcadeDashboard() {
   }, []);
 
   // Why universal cross-browser fullscreen handling: Supporting standard HTML5 along with WebKit and Microsoft proprietary extensions ensures edge-to-edge window expansion never stalls across varying desktop browsers!
-  const toggleFullscreen = () => {
+  const toggleFullscreen = useCallback(() => {
     const doc = document.documentElement;
     const isFull = document.fullscreenElement || document.webkitFullscreenElement || document.msFullscreenElement;
 
@@ -73,7 +98,7 @@ export default function ArcadeDashboard() {
         document.msExitFullscreen();
       }
     }
-  };
+  }, []);
 
   // Why useEffect: Keyboard shortcuts allow users to easily toggle wallpaper inspect mode (ESC) and full-screen immersion (F key).
   useEffect(() => {
@@ -94,7 +119,7 @@ export default function ArcadeDashboard() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isUiHidden]);
+  }, [isUiHidden, toggleFullscreen]);
 
   // Why this logic: Clicking continue transitions the user to the next arcade level and automatically rotates the background artwork!
   const handleContinue = () => {
@@ -104,17 +129,20 @@ export default function ArcadeDashboard() {
     }
   };
 
-  const handleCompleteTask = (id) => {
-    setTasks(tasks.map(task => 
+  // Why useCallback: Memoizing this handler prevents unnecessary re-renders of child components (TaskList, PomodoroTimer) that receive it as a prop.
+  const handleCompleteTask = useCallback((id) => {
+    setTasks(prevTasks => prevTasks.map(task => 
       task.id === id ? { ...task, completed: true } : task
     ));
-    if (activeTaskId === id) setActiveTaskId(null);
+    setActiveTaskId(prev => prev === id ? null : prev);
     
     // Add XP and persist to local storage
-    const newXp = totalXp + XP_PER_TASK;
-    setTotalXp(newXp);
-    saveXP(newXp);
-  };
+    setTotalXp(prevXp => {
+      const newXp = prevXp + XP_PER_TASK;
+      saveXP(newXp);
+      return newXp;
+    });
+  }, []);
 
   // Why fail-safe memory state injection: Ensuring the uploaded wallpaper is added to React state before checking offline disk storage guarantees 100% reliable rendering even for multi-megabyte photo uploads!
   const handleFileUpload = (e) => {
@@ -144,6 +172,7 @@ export default function ArcadeDashboard() {
       {isVictory && !isUiHidden && (
         <VictoryTrophy 
           totalTasks={completedCount} 
+          sessionXp={sessionXp}
           totalXp={totalXp} 
           activeArtwork={activeArtwork} 
           onContinue={handleContinue} 
@@ -420,15 +449,16 @@ export default function ArcadeDashboard() {
             boxShadow: '-10px 0 35px rgba(0,0,0,0.6)',
             zIndex: 40
           }}>
-            {/* Lofi Radio Synthesizer Console */}
+            {/* Lofi Radio Studio Console */}
             <LofiPlayer />
 
-            {/* Todo Checklist Module */}
+            {/* Todo Checklist Module — now wired to the XP system via onCompleteTask! */}
             <TaskList 
               tasks={tasks}
               setTasks={setTasks}
               activeTaskId={activeTaskId}
               setActiveTaskId={setActiveTaskId}
+              onCompleteTask={handleCompleteTask}
             />
           </aside>
 

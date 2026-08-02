@@ -1,11 +1,11 @@
 import React from 'react';
 
 // Why this structural pattern: We use a full-screen overlay portal-like component to create a dramatic, uninterrupted flow when the user succeeds.
-// Props clearly dictate visual info (XP, tasks, image preview).
+// Props clearly dictate visual info (sessionXp for current round, totalXp for lifetime, tasks, image preview).
 
-export default function VictoryTrophy({ totalTasks, totalXp, activeArtwork, onContinue }) {
+export default function VictoryTrophy({ totalTasks, sessionXp, totalXp, activeArtwork, onContinue }) {
   const handleShareX = () => {
-    const text = `I just completed ${totalTasks} tasks and earned ${totalXp} XP in Pomodoro Puzzle Arcade! Join the grind!`;
+    const text = `I just completed ${totalTasks} tasks and earned ${sessionXp} XP in Pomodoro Studio! Join the grind!`;
     const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
     window.open(url, '_blank');
   };
@@ -63,6 +63,7 @@ export default function VictoryTrophy({ totalTasks, totalXp, activeArtwork, onCo
           You crushed it. The fog has cleared and your focus is rewarded.
         </p>
 
+        {/* Why separate session vs total XP display: Previously this showed cumulative lifetime XP as "XP GAINED" which was misleading. Now it correctly shows only the XP earned in this specific session, plus the lifetime total for context. */}
         <div style={{
           display: 'flex',
           justifyContent: 'space-around',
@@ -77,8 +78,12 @@ export default function VictoryTrophy({ totalTasks, totalXp, activeArtwork, onCo
             <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#00f0ff' }}>{totalTasks}</div>
           </div>
           <div>
-            <div style={{ fontSize: '0.9rem', color: '#8892b0' }}>XP GAINED</div>
-            <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#ff007f' }}>+{totalXp}</div>
+            <div style={{ fontSize: '0.9rem', color: '#8892b0' }}>XP EARNED</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#ff007f' }}>+{sessionXp}</div>
+          </div>
+          <div>
+            <div style={{ fontSize: '0.9rem', color: '#8892b0' }}>TOTAL XP</div>
+            <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#a78bfa' }}>{totalXp}</div>
           </div>
         </div>
 

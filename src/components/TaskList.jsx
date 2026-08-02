@@ -2,7 +2,8 @@
 import React, { useState } from 'react';
 
 // Why this design: Making the task manager background ultra-translucent lets the evolving puzzle grid remain visible directly underneath your checklist items!
-export default function TaskList({ tasks, setTasks, activeTaskId, setActiveTaskId }) {
+// Why onCompleteTask prop: Previously, checking a task only toggled local state without granting XP or unlocking puzzle tiles. Now the parent ArcadeDashboard passes down its handleCompleteTask callback so checking a task properly triggers XP rewards and tile reveals!
+export default function TaskList({ tasks, setTasks, activeTaskId, setActiveTaskId, onCompleteTask }) {
   const [newTaskText, setNewTaskText] = useState('');
 
   const handleAddTask = (e) => {
@@ -19,10 +20,23 @@ export default function TaskList({ tasks, setTasks, activeTaskId, setActiveTaskI
     setNewTaskText('');
   };
 
+  // Why one-way completion: Completed tasks should stay completed to preserve XP integrity. Allowing un-checking would create an XP duplication exploit where users repeatedly check/uncheck the same task.
   const handleToggleComplete = (id) => {
-    setTasks(tasks.map(task => 
-      task.id === id ? { ...task, completed: !task.completed } : task
-    ));
+    const task = tasks.find(t => t.id === id);
+    if (!task) return;
+
+    // If task is already completed, do nothing (prevent un-checking)
+    if (task.completed) return;
+
+    // Call the parent's XP-granting completion handler
+    if (onCompleteTask) {
+      onCompleteTask(id);
+    }
+  };
+
+  // Why delete handler: Users who make typos or add wrong tasks need an escape hatch. Deleting only removes the task from the list without affecting XP that was already earned.
+  const handleDeleteTask = (id) => {
+    setTasks(tasks.filter(task => task.id !== id));
     if (activeTaskId === id) {
       setActiveTaskId(null);
     }
@@ -79,7 +93,8 @@ export default function TaskList({ tasks, setTasks, activeTaskId, setActiveTaskI
                   type="checkbox" 
                   checked={task.completed}
                   onChange={() => handleToggleComplete(task.id)}
-                  style={{ marginRight: '1rem', cursor: 'pointer', width: '20px', height: '20px', accentColor: '#00f0ff' }}
+                  disabled={task.completed}
+                  style={{ marginRight: '1rem', cursor: task.completed ? 'not-allowed' : 'pointer', width: '20px', height: '20px', accentColor: '#00f0ff' }}
                 />
                 <span style={{ 
                   flex: 1, 
@@ -93,17 +108,30 @@ export default function TaskList({ tasks, setTasks, activeTaskId, setActiveTaskI
                 >
                   {task.text}
                 </span>
+
+                {/* Delete button: Always available so users can remove typos or mistaken entries */}
+                {!task.completed && (
+                  <button 
+                    className="btn" 
+                    onClick={() => handleDeleteTask(task.id)}
+                    title="Delete this task"
+                    style={{ padding: '0.3rem 0.6rem', fontSize: '0.85rem', background: 'transparent', borderColor: 'rgba(255,100,100,0.3)', color: '#ff6b6b', marginLeft: '0.5rem', minWidth: 'auto' }}
+                  >
+                    🗑️
+                  </button>
+                )}
+
                 {!task.completed && !isActive && (
                   <button 
                     className="btn" 
-                    style={{ padding: '0.35rem 0.8rem', fontSize: '0.78rem', background: 'transparent', borderColor: 'rgba(255,255,255,0.2)' }}
+                    style={{ padding: '0.35rem 0.8rem', fontSize: '0.78rem', background: 'transparent', borderColor: 'rgba(255,255,255,0.2)', marginLeft: '0.3rem' }}
                     onClick={() => setActiveTaskId(task.id)}
                   >
                     Target ➔
                   </button>
                 )}
                 {isActive && (
-                  <span style={{ color: '#00f0ff', fontSize: '0.78rem', fontWeight: '800', background: 'rgba(0, 240, 255, 0.2)', padding: '0.3rem 0.7rem', borderRadius: '12px', letterSpacing: '1px' }}>
+                  <span style={{ color: '#00f0ff', fontSize: '0.78rem', fontWeight: '800', background: 'rgba(0, 240, 255, 0.2)', padding: '0.3rem 0.7rem', borderRadius: '12px', letterSpacing: '1px', marginLeft: '0.3rem' }}>
                     ✦ ACTIVE
                   </span>
                 )}
